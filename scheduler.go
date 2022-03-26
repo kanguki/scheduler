@@ -45,7 +45,7 @@ func (s *Driver) Run() {
 	disableHttpHandlerBool, _ := strconv.ParseBool(disableHttpHandler)
 	if !disableHttpHandlerBool {
 		if s.httpHandler == nil {
-			s.httpHandler = s.NewHttpHandler()
+			s.httpHandler = s.newHttpHandler()
 		}
 		err := http.ListenAndServe(s.port, s.mux)
 		if err != nil {
@@ -53,7 +53,7 @@ func (s *Driver) Run() {
 		}
 	}
 }
-func (s *Driver) NewHttpHandler() *httpHandler {
+func (s *Driver) newHttpHandler() *httpHandler {
 	port := os.Getenv(SCHEDULER_HTTP_PORT)
 	if port != "" {
 		if _, e := strconv.Atoi(port); e == nil {
@@ -68,10 +68,10 @@ func (s *Driver) NewHttpHandler() *httpHandler {
 	}
 	log.Printf("Start http cmd handler at %v\n", port)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/runNow", s.HandleCmd) //?job=
+	mux.HandleFunc("/runNow", s.handleCmd) //?job=
 	return &httpHandler{port: port, mux: mux}
 }
-func (s *Driver) HandleCmd(w http.ResponseWriter, r *http.Request) {
+func (s *Driver) handleCmd(w http.ResponseWriter, r *http.Request) {
 	if name := r.FormValue("job"); name != "" {
 		if job, ok := s.Jobs[name]; ok {
 			job.Do()

@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 func TestHandleCmd(t *testing.T) {
 	router := httprouter.New()
 	router.GET("/runNow", func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		s.HandleCmd(rw, r)
+		s.handleCmd(rw, r)
 	})
 	{
 		recorder := httptest.NewRecorder()
