@@ -1,12 +1,22 @@
+/**
+* enable log to file
+ */
 package scheduler
 
 import (
-	"gopkg.in/natefinch/lumberjack.v2"
+	"fmt"
 	log "log"
+	"os"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func InitLog(path string) {
-	if path != "" {
+func Log(format string, args ...interface{}) {
+	log.Printf("%s\n", fmt.Sprintf(format, args...))
+}
+
+func init() {
+	if path := os.Getenv("LOG_PATH"); path != "" {
 		l := &lumberjack.Logger{
 			Filename: path,
 			MaxSize:  1,    // megabytes

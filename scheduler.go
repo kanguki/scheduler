@@ -31,7 +31,7 @@ type Job struct {
 }
 
 func (s *Driver) Run() {
-	log.Println("Start scheduler")
+	Log("Start scheduler")
 	if s.Cron == nil {
 		s.Cron = cron.New(cron.WithSeconds())
 	}
