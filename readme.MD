@@ -10,7 +10,7 @@ When running jobs, it has to decide which node is leader first. I think it's use
 
 ##### ENV:
 
-sample envs are declared in [examples/run.sh](examples/run.sh)
+envs are declared in [env.go](env.go)
 
 ##### Code:
 
@@ -35,3 +35,21 @@ curl http://localhost:port/runNow?job=job_name
 ```
 
 To disable this feature, set `SCHEDULER_DISABLE_HTTP_HANDLER=true`
+
+# Run
+
+```
+chmod 765 test.sh ./examples/run.sh
+```
+
+Run examples
+
+```
+./examples/run.sh
+```
+
+Run tests
+
+```
+./test.sh
+```

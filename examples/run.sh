@@ -4,5 +4,5 @@ export LOG_PATH=
 export SCHEDULER_ELECTOR=zk 
 export ZOOKEEPER_URLS=127.0.0.1:2181 
 
-#rm log/* &&
+rm -f log/* &&
 go run examples/main.go
