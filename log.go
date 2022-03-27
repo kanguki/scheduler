@@ -16,7 +16,7 @@ func Log(format string, args ...interface{}) {
 }
 
 func init() {
-	if path := os.Getenv("LOG_PATH"); path != "" {
+	if path := os.Getenv(LOG_PATH); path != "" {
 		l := &lumberjack.Logger{
 			Filename: path,
 			MaxSize:  1,    // megabytes

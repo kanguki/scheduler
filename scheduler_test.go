@@ -14,7 +14,7 @@ var s *Driver
 
 func TestMain(m *testing.M) {
 	s = &Driver{
-		Jobs: map[string]Job{
+		Jobs: map[string]*Job{
 			"say_lala": {
 				CronTime: "*/5 * * * * *",
 				Do: func() {

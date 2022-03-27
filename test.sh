@@ -1,5 +1,7 @@
 export SCHEDULER_HTTP_PORT=
 export SCHEDULER_DISABLE_HTTP_HANDLER=
+export SCHEDULER_ELECTOR=
+export ZOOKEEPER_URLS=
 export LOG_PATH=
 
 #-short to run tests not connecting to network

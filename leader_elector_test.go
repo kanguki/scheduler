@@ -14,29 +14,30 @@ import (
 
 func TestZK_IAmLeader(t *testing.T) {
 	timeoutProblem := "this test can fail if connect timeout is too slow for status/ state" +
-		" to be updated. should be 5+ sec. if reset can't solve, you gotta do more debug :D"
+		" to be updated. should be 5+ sec. if it can't solve, you gotta do more debug :D"
 	if testing.Short() {
 		t.Skip("skipping TestZK_IAmLeader in short mode")
 	}
 	zkport := 2181
 	conf := ZKLeaderElectorConfig{
 		zkHosts:        []string{"127.0.0.1:" + strconv.Itoa(zkport)},
-		electionName:   "",
-		connectTimeout: 4 * time.Second,
+		connectTimeout: 5 * time.Second,
 	}
-	electionName := "lala"
 	conn1, _, err := zk.Connect(conf.zkHosts, conf.connectTimeout)
 	if err != nil {
 		log.Printf("Error in zk.Connect (%s): %v", conf.zkHosts, err)
 	}
 	defer conn1.Close()
-	elector1 := NewZK(conn1, conf.Name("1"))
+	conf.Id = "1"
+	elector1 := NewZK(conn1, conf)
 	conn2, _, err := zk.Connect(conf.zkHosts, conf.connectTimeout)
 	if err != nil {
 		log.Printf("Error in zk.Connect (%s): %v", conf.zkHosts, err)
 	}
 	defer conn2.Close()
-	elector2 := NewZK(conn2, conf.Name("2"))
+	conf.Id = "2"
+	elector2 := NewZK(conn2, conf)
+	electionName := "lala"
 	{
 		t.Log("one leader at a time")
 		assert.Equal(t, true, elector1.IAmLeader(electionName, 0))
@@ -51,7 +52,7 @@ func TestZK_IAmLeader(t *testing.T) {
 	}
 	{
 		t.Log("zookeeper is down")
-		_ = exec.Command("bash", "-c", fmt.Sprintf("sudo iptables -I INPUT -p tcp --dport %v -j DROP", zkport)).Run()
+		exec.Command("bash", "-c", fmt.Sprintf("sudo iptables -I INPUT -p tcp --dport %v -j DROP", zkport)).Run()
 		time.Sleep(conf.connectTimeout) //this depends on zk timeout to reset state. I think this is enough after multiple tries :D
 		assert.Equal(t, false, elector1.IAmLeader(electionName, 0), timeoutProblem)
 		assert.Equal(t, false, elector2.IAmLeader(electionName, 0), timeoutProblem)

@@ -1,7 +1,7 @@
 jobs:
-  - name: "123"
-    time: "0 * * * * *"
-    msg: "every minute"
+  - name: "sdf123"
+    time: "0/7 * * * * *"
+    msg: "every 7 secs"
   - name: "1233"
     time: "*/10 * * * * *"
     msg: "every 5 seconds"

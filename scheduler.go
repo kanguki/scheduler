@@ -11,15 +11,14 @@ import (
 )
 
 const (
-	defaultPort                    = ":8000"
-	SCHEDULER_DISABLE_HTTP_HANDLER = "SCHEDULER_DISABLE_HTTP_HANDLER"
-	SCHEDULER_HTTP_PORT            = "SCHEDULER_HTTP_PORT"
+	defaultPort = ":8000"
 )
 
 type Driver struct {
 	Cron *cron.Cron
 	*httpHandler
-	Jobs map[string]Job
+	Jobs map[string]*Job
+	LeaderElector
 }
 type httpHandler struct {
 	port string
@@ -30,20 +29,39 @@ type Job struct {
 	Do       func()
 }
 
+func (j *Job) AddCron(id string, cron *cron.Cron, le LeaderElector) {
+	cron.AddFunc(j.CronTime, func() {
+		if le.IAmLeader(id, 0) {
+			Log("I am leader for job %v", id)
+			j.Do()
+		}
+
+	})
+}
+
 func (s *Driver) Run() {
 	Log("Start scheduler")
+	//init leader elector
+	s.LeaderElector = NewLeaderElector()
+	if s.LeaderElector == nil {
+		Log("Creating Leader elector failed. Exiting")
+		os.Exit(1)
+	}
+	defer s.LeaderElector.CleanResource()
+
+	//init cron
 	if s.Cron == nil {
 		s.Cron = cron.New(cron.WithSeconds())
 	}
-	for _, j := range s.Jobs {
-		s.Cron.AddFunc(j.CronTime, j.Do)
+	for id, j := range s.Jobs {
+		j.AddCron(id, s.Cron, s.LeaderElector)
 	}
 	s.Cron.Start()
 	// defer s.cron.Stop()
 
-	disableHttpHandler := os.Getenv(SCHEDULER_DISABLE_HTTP_HANDLER)
-	disableHttpHandlerBool, _ := strconv.ParseBool(disableHttpHandler)
-	if !disableHttpHandlerBool {
+	//init handler
+	disableHttpHandler, _ := strconv.ParseBool(os.Getenv(SCHEDULER_DISABLE_HTTP_HANDLER))
+	if !disableHttpHandler {
 		if s.httpHandler == nil {
 			s.httpHandler = s.newHttpHandler()
 		}
@@ -71,6 +89,8 @@ func (s *Driver) newHttpHandler() *httpHandler {
 	mux.HandleFunc("/runNow", s.handleCmd) //?job=
 	return &httpHandler{port: port, mux: mux}
 }
+
+//run in this server. no need to decide who is leader
 func (s *Driver) handleCmd(w http.ResponseWriter, r *http.Request) {
 	if name := r.FormValue("job"); name != "" {
 		if job, ok := s.Jobs[name]; ok {

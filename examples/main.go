@@ -16,31 +16,33 @@ func main() {
 	select {}
 }
 
-func loadJobs() map[string]scheduler.Job {
-	jobs := map[string]scheduler.Job{
-		"say_lala": {
-			//from hour 1->19, from minute 20-40 and 42-59, from sec 0-50, run job every 3 seconds
-			CronTime: "0-50/3 20-40,42-59 1-19 * * SUN-SAT",
+func loadJobs() map[string]*scheduler.Job {
+	jobs := map[string]*scheduler.Job{
+		"say_lala_every_3_secs": {
+			//from hour 1->19, from sec 0-50, run job every 3 seconds
+			CronTime: "0-50/3 1-19,20-41,42-59 0-19 * * SUN-SAT",
 			Do: func() {
-				scheduler.Log("lala")
+				scheduler.Log("lala every 3 secs")
 			},
 		},
 		"say_hehe": {
-			CronTime: "*/5 * * * * *", //run every 5 second. (@every 5s) works the same way
+			CronTime: "*/6 * * * * *",
 			Do: func() {
-				scheduler.Log("hehe")
+				scheduler.Log("hehe every 6 secs")
 			},
 		},
 	}
 	absPath, _ := filepath.Abs("examples/jobs.yml")
 	ymlJobs := ymlToJob(absPath)
 	for _, job := range ymlJobs {
-		jobs[job.Name] = scheduler.Job{
+		scheduler.Log("%+v", job)
+		jobs[job.Name] = &scheduler.Job{
 			CronTime: job.Time,
 			Do: func() {
 				scheduler.Log(job.Msg)
 			}}
 	}
+	scheduler.Log("jobs: %+v", jobs)
 	return jobs
 
 }
