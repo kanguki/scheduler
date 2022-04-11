@@ -15,12 +15,16 @@ envs are declared in [env.go](env.go)
 ##### Code:
 
 ```
-import "github.com/kanguki/scheduler"
+import (
+"github.com/kanguki/scheduler"
+"github.com/kanguki/leader-election"
+)
 func main() {
 	var scheduler = &scheduler.Driver{
 		Jobs: loadJobs(),
 	}
-	go scheduler.Run()
+	opts := scheduler.Opts{LeOpts: leaderelection.LeOpts{Base: "NATS", Name: "test", Size: 3}}
+	go scheduler.Run(opts)
 	//do other stuff
 }
 func loadJobs() map[string]*scheduler.Job {}

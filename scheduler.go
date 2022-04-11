@@ -6,8 +6,9 @@ import (
 	"os"
 	"strconv"
 
+	le "github.com/kanguki/leader-election"
+	log "github.com/kanguki/log"
 	cron "github.com/robfig/cron/v3"
-	log "log"
 )
 
 const (
@@ -18,43 +19,49 @@ type Driver struct {
 	Cron *cron.Cron
 	*httpHandler
 	Jobs map[string]*Job
-	LeaderElector
+	le.LE
 }
+
+type Opts struct {
+	le.LeOpts
+}
+
 type httpHandler struct {
 	port string
 	mux  *http.ServeMux
 }
 type Job struct {
+	Name     string
 	CronTime string
 	Do       func()
 }
 
-func (j *Job) AddCron(id string, cron *cron.Cron, le LeaderElector) {
+func (j *Job) AddCron(id string, cron *cron.Cron, le le.LE) {
 	cron.AddFunc(j.CronTime, func() {
-		if le.IAmLeader(id, 0) {
-			Log("I am leader for job %v", id)
+		if le.AmILeader() {
+			log.Debug("I am leader for job %v", id)
 			j.Do()
 		}
-
 	})
 }
 
-func (s *Driver) Run() {
-	Log("Start scheduler")
+func (s *Driver) Run(opts Opts) {
+	log.Log("Start scheduler")
 	//init leader elector
-	s.LeaderElector = NewLeaderElector()
-	if s.LeaderElector == nil {
-		Log("Creating Leader elector failed. Exiting")
+	leaderElector, err := le.NewLE(opts.LeOpts)
+	if err != nil {
+		log.Log("Creating Leader elector failed. Exiting")
 		os.Exit(1)
 	}
-	defer s.LeaderElector.CleanResource()
+	s.LE = leaderElector
+	// defer s.LE.CleanResource()
 
 	//init cron
 	if s.Cron == nil {
 		s.Cron = cron.New(cron.WithSeconds())
 	}
 	for id, j := range s.Jobs {
-		j.AddCron(id, s.Cron, s.LeaderElector)
+		j.AddCron(id, s.Cron, s.LE)
 	}
 	s.Cron.Start()
 	// defer s.cron.Stop()
@@ -67,7 +74,7 @@ func (s *Driver) Run() {
 		}
 		err := http.ListenAndServe(s.port, s.mux)
 		if err != nil {
-			log.Fatal("error serving http handler: ", err.Error())
+			log.Log("error serving http handler: ", err.Error())
 		}
 	}
 }
@@ -77,14 +84,14 @@ func (s *Driver) newHttpHandler() *httpHandler {
 		if _, e := strconv.Atoi(port); e == nil {
 			port = ":" + port
 		} else {
-			log.Printf("invalid %v. use default port %v\n", SCHEDULER_HTTP_PORT, defaultPort)
+			log.Log("invalid %v. use default port %v\n", SCHEDULER_HTTP_PORT, defaultPort)
 			port = defaultPort
 		}
 	} else {
-		log.Printf("empty %v. use default port %v\n", SCHEDULER_HTTP_PORT, defaultPort)
+		log.Log("empty %v. use default port %v\n", SCHEDULER_HTTP_PORT, defaultPort)
 		port = defaultPort
 	}
-	log.Printf("Start http cmd handler at %v\n", port)
+	log.Log("Start http cmd handler at %v\n", port)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/runNow", s.handleCmd) //?job=
 	return &httpHandler{port: port, mux: mux}
